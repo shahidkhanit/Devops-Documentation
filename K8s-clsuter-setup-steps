@@ -1,0 +1,105 @@
+    1.#apt-get update -y && apt-get install openssh-server -y
+---------------------------------------------------------------
+   
+   2. nano /etc/hosts
+       192.168.29.10 k8s-master.com
+	     192.168.29.20 worker-node1.com
+	   
+	   #hostnamectl set-hostname k8s-master.com  and worker-node1.com -> bash 
+	   
+	   # nmtui _> set ip address 
+-----------------------------------------------------------------
+	   
+	3. take ssh connection from master 
+	    ssh-key -t rsa
+		
+		cd ~/.ssh
+		
+		#ssh-copy-id  k8s-master@192.168.29.20  > ip of worker node 1
+	   
+   ----------------------------------------------------------------------
+   19  tee /etc/sysctl.d/kubernetes.conf<<EOF
+       net.bridge.bridge-nf-call-ip6tables = 1
+       net.bridge.bridge-nf-call-iptables = 1
+       net.ipv4.ip_forward = 1
+ n     EOF
+
+   20  sysctl --system
+-----------------------------------------------------------------------------------------
+   21  mkdir -m 0755 -p /etc/apt/keyrings
+   
+   22  sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+   
+   23  curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+   
+   24  echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+   25  sudo apt-get update
+   
+   26  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+   27  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+----------------------------------------------------------------------------------------------------
+
+   28  apt-get update && apt-get install -y containerd.io
+   
+   29  mkdir -p /etc/containerd
+   
+   30  containerd config default>/etc/containerd/config.toml
+   
+   31  systemctl daemon-reload
+   
+   32  systemctl status containerd
+--------------------------------------------------------------------------------------------------------
+   
+   33  apt-get update && apt-get install -y kubelet kubeadm kubectl
+   
+   34  apt-mark hold kubelet kubeadm kubectl
+   
+   35  systemctl enable kubelet
+   
+   37  sudo swapoff -a
+   38  sudo nano /etc/fstab
+       #comment all 
+	   
+   39  sudo systemctl daemon-reload
+   40  sudo systemctl restart kubelet
+   41  sudo systemctl status kubelet
+   
+   --------------------------------------------------------------------------------------------------
+   ##IMPORTANT: --> ON MASTER NODE ONLY ###
+   
+   # kubeadm init   
+   
+   # mkdir -p $HOME/.kube
+   # export KUBECONFIG=/etc/kubernetes/admin.conf
+   # echo 'export KUBECONFIG=/etc/kubernetes/admin.conf' >> .bashrc
+   ---------------------------------------------------------------------------------------------------------------
+
+
+# generate token to join worker node with master node 
+  # kubeadm token create --print-join-command   > run on master node 
+
+# run on all worker nodes
+kubeadm join 192.168.29.10:6443 --token vo250b.u47zajg1qaknf3it         --discovery-token-ca-cert-hash sha256:a5bc604284341489a9a2f15d9b9d48e84c95dea7e79ffa43d82719f242fca8b3
+--------------------------------------------------------------------------------
+
+
+# now check k8s clster nodes status 
+     # kubectl get nodes
+	  o/p : not ready 
+	  
+	# now install k8s cni ( network plugings)
+	
+	#  kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+    #  kubectl get no
+	 o/p :-  now it will show ready 
+    #  kubectl get pods -n kube-system
+
+
+------------------------------------------------
+
+   
+   
+   
+   
+  
